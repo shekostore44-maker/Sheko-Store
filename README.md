@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sheko Store
 
-## Getting Started
+متجر Sheko الإلكتروني — Next.js 16 + Supabase. الخطة الكاملة في [PLAN.md](PLAN.md).
 
-First, run the development server:
+## التشغيل محلياً
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # ثم ضع مفاتيح Supabase
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## الأوامر
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| الأمر               | الوظيفة                  |
+| ------------------- | ------------------------ |
+| `npm run dev`       | تشغيل بيئة التطوير       |
+| `npm run build`     | بناء نسخة الإنتاج        |
+| `npm run lint`      | فحص الكود (ESLint)       |
+| `npm run typecheck` | فحص الأنواع (TypeScript) |
+| `npm run format`    | تنسيق الكود (Prettier)   |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## الهيكل
 
-## Learn More
+```
+app/
+  (store)/          صفحات المتجر (هيدر + فوتر + شريط سفلي للموبايل)
+  layout.tsx        الخطوط، RTL، الـ Metadata
+  robots.ts         يمنع الفهرسة حتى الإطلاق (NEXT_PUBLIC_SITE_INDEXABLE)
+components/
+  store/            مكونات واجهة المتجر
+  ui/               مكونات shadcn/ui
+lib/
+  supabase/         عملاء Supabase (المتصفح، السيرفر، proxy)
+  site.ts           إعدادات الموقع العامة
+proxy.ts            تحديث جلسة Supabase (بديل middleware في Next 16)
+public/brand/       اللوجو وأيقونة الأسد
+brand/              ملفات الهوية الأصلية
+```
 
-To learn more about Next.js, take a look at the following resources:
+## ملاحظات
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16: ملف `middleware.ts` أصبح اسمه `proxy.ts`، و`cookies()`/`params` أصبحت async فقط.
+- على Windows: أوامر `npx shadcn` تعمل من PowerShell (من Git Bash يفشل تثبيت الحزم).
+- صور `public/placeholders/` مؤقتة وتُستبدل بصور المنتجات الحقيقية.
