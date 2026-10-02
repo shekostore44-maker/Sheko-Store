@@ -44,7 +44,7 @@ export default async function AdminDashboardPage() {
       </ul>
 
       <div className="border-brand-blue/30 bg-brand-tint/50 text-brand-navy-soft rounded-2xl border border-dashed p-5">
-        قاعدة البيانات متصلة والصلاحيات تعمل. إدارة الأقسام والمنتجات تأتي في المرحلة 3.
+        ابدأ بإضافة الأقسام، وبعدها أضف المنتجات بصورها وأسعارها ومتغيراتها.
       </div>
     </div>
   )
