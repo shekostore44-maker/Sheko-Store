@@ -38,6 +38,18 @@ public/brand/       اللوجو وأيقونة الأسد
 brand/              ملفات الهوية الأصلية
 ```
 
+## قاعدة البيانات
+
+ملفات `supabase/migrations/` تتشغّل بالترتيب (من الأقدم للأحدث) من
+**Supabase → SQL Editor**: افتح كل ملف، انسخ محتواه، الصقه، واضغط Run.
+
+ترقية حساب إلى أدمن (بعد إنشائه من Authentication → Users):
+
+```sql
+update public.profiles set role = 'admin'
+where id = (select id from auth.users where email = 'admin@example.com');
+```
+
 ## ملاحظات
 
 - Next.js 16: ملف `middleware.ts` أصبح اسمه `proxy.ts`، و`cookies()`/`params` أصبحت async فقط.

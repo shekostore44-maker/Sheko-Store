@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# one-off combined copy of the migrations for the SQL Editor
+/supabase/setup-all.sql

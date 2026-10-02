@@ -3,14 +3,27 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "./env"
 
+const ADMIN_LOGIN = "/admin/login"
+
+function isProtectedAdminPath(pathname: string) {
+  return pathname.startsWith("/admin") && !pathname.startsWith(ADMIN_LOGIN)
+}
+
 /**
  * Refreshes the Supabase auth session on every request so Server Components
- * always see a valid session. Admin route protection is added in phase 2.
+ * always see a valid session, and sends signed-out visitors of /admin to the
+ * login page. This is only an optimistic check: the admin role itself is
+ * verified in lib/auth/dal.ts and by RLS in the database.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  if (!isSupabaseConfigured) return response
+  if (!isSupabaseConfigured) {
+    if (isProtectedAdminPath(request.nextUrl.pathname)) {
+      return NextResponse.redirect(new URL(ADMIN_LOGIN, request.url))
+    }
+    return response
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -32,7 +45,17 @@ export async function updateSession(request: NextRequest) {
 
   // Do not run code between createServerClient and getClaims():
   // getClaims() is what refreshes an expired session.
-  await supabase.auth.getClaims()
+  const { data } = await supabase.auth.getClaims()
+
+  const { pathname, search } = request.nextUrl
+  if (!data?.claims && isProtectedAdminPath(pathname)) {
+    const loginUrl = new URL(ADMIN_LOGIN, request.url)
+    loginUrl.searchParams.set("next", pathname + search)
+    const redirect = NextResponse.redirect(loginUrl)
+    // Keep any refreshed auth cookies on the redirect response.
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
+    return redirect
+  }
 
   return response
 }
