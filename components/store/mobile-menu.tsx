@@ -98,6 +98,20 @@ export function MobileMenu({ categories }: { categories: NavCategory[] }) {
           >
             العروض
           </Link>
+          <Link
+            href="/track"
+            onClick={close}
+            className="text-brand-navy hover:bg-accent rounded-xl p-3 font-medium"
+          >
+            تتبع الطلب
+          </Link>
+          <Link
+            href="/account"
+            onClick={close}
+            className="text-brand-navy hover:bg-accent rounded-xl p-3 font-medium"
+          >
+            حسابي
+          </Link>
         </div>
       </SheetContent>
     </Sheet>

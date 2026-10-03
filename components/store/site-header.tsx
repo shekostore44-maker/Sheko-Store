@@ -1,4 +1,4 @@
-import { ChevronDown, Search, ShoppingBag } from "lucide-react"
+import { ChevronDown, Search, ShoppingBag, UserRound } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -113,6 +113,13 @@ export function SiteHeader({ categories }: { categories: NavCategory[] }) {
             className="text-brand-navy hover:bg-accent rounded-lg p-2 md:hidden"
           >
             <Search className="size-5" />
+          </Link>
+          <Link
+            href="/account"
+            aria-label="حسابي"
+            className="text-brand-navy hover:bg-accent rounded-lg p-2"
+          >
+            <UserRound className="size-5" />
           </Link>
           <Link
             href="/cart"

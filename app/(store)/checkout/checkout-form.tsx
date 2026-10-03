@@ -1,15 +1,19 @@
 "use client"
 
-import { Banknote, Loader2, ShoppingBag } from "lucide-react"
+import { Banknote, Loader2, MapPin, ShoppingBag, UserRound } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { CartNotices } from "@/components/store/cart-notices"
 import { Skeleton } from "@/components/ui/skeleton"
-import { placeOrder } from "@/lib/cart/actions"
+import {
+  getCheckoutDefaults,
+  placeOrder,
+  type CheckoutDefaults,
+} from "@/lib/cart/actions"
 import type { ShippingGovernorate } from "@/lib/cart/queries"
 import {
   cartCount,
@@ -82,6 +86,55 @@ export function CheckoutForm({ governorates }: { governorates: ShippingGovernora
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [website, setWebsite] = useState("")
   const [placed, setPlaced] = useState(false)
+  const [account, setAccount] = useState<CheckoutDefaults | null>(null)
+  const [saveAddress, setSaveAddress] = useState(true)
+
+  // Signed-in customers: prefill name, phone and their default address.
+  useEffect(() => {
+    let cancelled = false
+    getCheckoutDefaults()
+      .then((defaults) => {
+        if (cancelled) return
+        setAccount(defaults)
+        if (!defaults.signedIn) return
+        const saved = defaults.addresses.find((a) =>
+          governorates.some((g) => g.id === a.governorateId),
+        )
+        setForm((f) => ({
+          ...f,
+          name: f.name || defaults.name,
+          phone: f.phone || saved?.phone || defaults.phone,
+          ...(saved && !f.governorateId
+            ? {
+                governorateId: String(saved.governorateId),
+                cityId: saved.cityId ? String(saved.cityId) : "",
+                address: saved.address,
+              }
+            : {}),
+        }))
+        if (saved) setSaveAddress(false)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [governorates])
+
+  function applyAddress(a: CheckoutDefaults["addresses"][number]) {
+    setForm((f) => ({
+      ...f,
+      governorateId: String(a.governorateId),
+      cityId: a.cityId ? String(a.cityId) : "",
+      address: a.address,
+      phone: a.phone || f.phone,
+    }))
+    setErrors({})
+    setSaveAddress(false)
+  }
+  const usableAddresses =
+    account?.addresses.filter((a) =>
+      governorates.some((g) => g.id === a.governorateId),
+    ) ?? []
 
   const governorate = governorates.find((g) => String(g.id) === form.governorateId)
   const subtotal = cartSubtotal(items)
@@ -116,6 +169,7 @@ export function CheckoutForm({ governorates }: { governorates: ShippingGovernora
           quantity,
         })),
         website,
+        saveAddress: account?.signedIn ? saveAddress : false,
       })
       if (!result.ok) {
         setErrors(result.fieldErrors ?? {})
@@ -175,6 +229,17 @@ export function CheckoutForm({ governorates }: { governorates: ShippingGovernora
       <div className="flex flex-col gap-6">
         <CartNotices notices={notices} />
 
+        {account && !account.signedIn && (
+          <p className="bg-brand-ice text-brand-navy flex flex-wrap items-center gap-2 rounded-2xl p-4 text-sm">
+            <UserRound className="text-brand-blue size-5" aria-hidden />
+            عندك حساب؟
+            <Link href="/login?next=/checkout" className="text-brand-blue font-semibold">
+              سجّل دخول
+            </Link>
+            عشان نملا بياناتك وتتابع طلبك من حسابك. أو كمّل كضيف عادي.
+          </p>
+        )}
+
         <section className="border-border flex flex-col gap-4 rounded-2xl border bg-white p-5 sm:p-6">
           <h2 className="text-brand-navy text-lg font-bold">بيانات التواصل</h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -216,6 +281,30 @@ export function CheckoutForm({ governorates }: { governorates: ShippingGovernora
 
         <section className="border-border flex flex-col gap-4 rounded-2xl border bg-white p-5 sm:p-6">
           <h2 className="text-brand-navy text-lg font-bold">عنوان التوصيل</h2>
+          {usableAddresses.length > 1 && (
+            <div className="flex flex-wrap gap-2" aria-label="عناويني المحفوظة">
+              {usableAddresses.map((a) => {
+                const selected =
+                  form.governorateId === String(a.governorateId) &&
+                  form.address === a.address
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => applyAddress(a)}
+                    aria-pressed={selected}
+                    className={`flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${selected ? "border-brand-blue bg-brand-blue/10 text-brand-blue font-semibold" : "border-border text-brand-navy bg-white"}`}
+                  >
+                    <MapPin className="size-4 shrink-0" aria-hidden />
+                    <span className="truncate">
+                      {governorates.find((g) => g.id === a.governorateId)?.name} —{" "}
+                      {a.address}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               id="governorateId"
@@ -293,6 +382,17 @@ export function CheckoutForm({ governorates }: { governorates: ShippingGovernora
               className={`${inputClass} h-auto py-3`}
             />
           </FormField>
+          {account?.signedIn && (
+            <label className="text-brand-navy flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={saveAddress}
+                onChange={(e) => setSaveAddress(e.target.checked)}
+                className="accent-brand-blue size-4"
+              />
+              احفظ العنوان ده في حسابي
+            </label>
+          )}
           {/* Honeypot: invisible to people, bots fill it in. */}
           <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
             <label htmlFor="website">Website</label>

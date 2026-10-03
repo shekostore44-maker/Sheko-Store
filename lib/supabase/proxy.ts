@@ -9,10 +9,14 @@ function isProtectedAdminPath(pathname: string) {
   return pathname.startsWith("/admin") && !pathname.startsWith(ADMIN_LOGIN)
 }
 
+function isAccountPath(pathname: string) {
+  return pathname === "/account" || pathname.startsWith("/account/")
+}
+
 /**
  * Refreshes the Supabase auth session on every request so Server Components
- * always see a valid session, and sends signed-out visitors of /admin to the
- * login page. This is only an optimistic check: the admin role itself is
+ * always see a valid session, and sends signed-out visitors of /admin and /account to
+ * the matching login page. This is only an optimistic check: the admin role itself is
  * verified in lib/auth/dal.ts and by RLS in the database.
  */
 export async function updateSession(request: NextRequest) {
@@ -48,8 +52,12 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
 
   const { pathname, search } = request.nextUrl
-  if (!data?.claims && isProtectedAdminPath(pathname)) {
-    const loginUrl = new URL(ADMIN_LOGIN, request.url)
+  const needsLogin = isProtectedAdminPath(pathname) || isAccountPath(pathname)
+  if (!data?.claims && needsLogin) {
+    const loginUrl = new URL(
+      isAccountPath(pathname) ? "/login" : ADMIN_LOGIN,
+      request.url,
+    )
     loginUrl.searchParams.set("next", pathname + search)
     const redirect = NextResponse.redirect(loginUrl)
     // Keep any refreshed auth cookies on the redirect response.

@@ -4,13 +4,19 @@ import { notFound } from "next/navigation"
 
 import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs"
 import { ProductGrid, SectionHeader } from "@/components/store/product-card"
-import { getProductBySlug, getRelatedProducts } from "@/lib/catalog/store-queries"
-import { decodeParam } from "@/lib/format"
+import { Stars } from "@/components/store/stars"
+import {
+  getProductBySlug,
+  getProductReviews,
+  getRelatedProducts,
+} from "@/lib/catalog/store-queries"
+import { decodeParam, formatNumber } from "@/lib/format"
 import { sanitizeDescription, textExcerpt } from "@/lib/html"
 import { siteConfig } from "@/lib/site"
 
 import { BuyBox } from "./buy-box"
 import { ProductGallery } from "./product-gallery"
+import { ReviewsSection, reviewCount } from "./reviews-section"
 
 // Product pages are generated on first visit, then cached. Admin edits refresh
 // them immediately; this is only a safety net.
@@ -50,7 +56,10 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const related = await getRelatedProducts(product)
+  const [related, rating] = await Promise.all([
+    getRelatedProducts(product),
+    getProductReviews(product.id),
+  ])
   const description = sanitizeDescription(product.description)
   const url = `${siteConfig.url}/p/${encodeURIComponent(product.slug)}`
 
@@ -82,6 +91,15 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
       image: product.images.map((img) => img.url),
       sku: product.sku || undefined,
       brand: { "@type": "Brand", name: siteConfig.name },
+      aggregateRating: rating.count
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: rating.average,
+            reviewCount: rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          }
+        : undefined,
       offers: {
         "@type": "AggregateOffer",
         priceCurrency: "EGP",
@@ -128,6 +146,14 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
             <h1 className="text-brand-navy mt-1 text-3xl leading-tight font-bold sm:text-4xl">
               {product.name}
             </h1>
+            {rating.count > 0 && (
+              <a href="#reviews" className="mt-2 flex items-center gap-2 text-sm">
+                <Stars value={rating.average} />
+                <span className="text-brand-slate">
+                  {formatNumber(rating.average)} · {reviewCount(rating.count)}
+                </span>
+              </a>
+            )}
             {product.short_description && (
               <p className="text-brand-slate mt-3 leading-relaxed">
                 {product.short_description}
@@ -174,6 +200,15 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           />
         </section>
       )}
+
+      <ReviewsSection
+        productId={product.id}
+        slug={product.slug}
+        reviews={rating.reviews}
+        average={rating.average}
+        count={rating.count}
+        distribution={rating.distribution}
+      />
 
       {related.length > 0 && (
         <section className="mt-14">

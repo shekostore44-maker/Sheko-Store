@@ -50,3 +50,29 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   return admin
 }
+
+export type CustomerProfile = SessionUser & { fullName: string; phone: string }
+
+/** The signed-in user's profile (any role), or null when signed out. */
+export const getProfile = cache(async (): Promise<CustomerProfile | null> => {
+  const user = await getCurrentUser()
+  if (!user) return null
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, phone")
+    .eq("id", user.id)
+    .maybeSingle()
+  return { ...user, fullName: data?.full_name ?? "", phone: data?.phone ?? "" }
+})
+
+/**
+ * Call at the top of every account page and customer Server Action.
+ * `next` is where to come back after signing in.
+ */
+export async function requireCustomer(next = "/account"): Promise<CustomerProfile> {
+  const profile = await getProfile()
+  if (!profile) redirect(`/login?next=${encodeURIComponent(next)}`)
+  return profile
+}

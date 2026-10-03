@@ -36,13 +36,11 @@ export async function saveWhatsappSettings(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
-    .from("settings")
-    .upsert({
-      key: "whatsapp",
-      value: { number, template: parsed.data.template },
-      is_public: false,
-    })
+  const { error } = await supabase.from("settings").upsert({
+    key: "whatsapp",
+    value: { number, template: parsed.data.template },
+    is_public: false,
+  })
   if (error) return { ok: false, error: catalogDbError(error) }
   // Order pages read this on every request; nothing cached to refresh.
   return { ok: true, data: { number } }

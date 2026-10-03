@@ -54,6 +54,16 @@ export function SiteFooter({ categories }: { categories: NavCategory[] }) {
                 البحث
               </Link>
             </li>
+            <li>
+              <Link href="/track" className="hover:text-brand-cyan transition-colors">
+                تتبع الطلب
+              </Link>
+            </li>
+            <li>
+              <Link href="/account" className="hover:text-brand-cyan transition-colors">
+                حسابي
+              </Link>
+            </li>
           </ul>
         </nav>
 

@@ -2,12 +2,14 @@
 
 import { z } from "zod"
 
+import { getCurrentUser, getProfile } from "@/lib/auth/dal"
 import { revalidateCatalog } from "@/lib/catalog/revalidate"
 import { fieldErrorsOf } from "@/lib/catalog/schemas"
 import type { ActionResult } from "@/lib/catalog/types"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { isSupabaseConfigured } from "@/lib/supabase/env"
 import { createPublicClient } from "@/lib/supabase/public"
+import { createClient } from "@/lib/supabase/server"
 
 import { cartLinesSchema, checkoutSchema, type CheckoutInput } from "./schemas"
 
@@ -128,6 +130,8 @@ export async function placeOrder(input: {
   items: unknown
   /** Honeypot: hidden from people, filled by bots. */
   website?: string
+  /** Signed-in customers: keep this address in their account. */
+  saveAddress?: boolean
 }): Promise<
   ActionResult<{ orderNumber: string; token: string }> & { refreshCart?: boolean }
 > {
@@ -147,9 +151,12 @@ export async function placeOrder(input: {
   if (!isSupabaseConfigured) return { ok: false, error: "المتجر مش متصل بقاعدة البيانات" }
 
   const c = customer.data
+  // The account comes from the session, never from the browser input.
+  const user = await getCurrentUser()
   const { data, error } = await createAdminClient()
     .rpc("place_order", {
       p_order: {
+        user_id: user?.id ?? null,
         customer_name: c.name,
         phone: c.phone,
         governorate_id: c.governorateId,
@@ -180,7 +187,102 @@ export async function placeOrder(input: {
     }
   }
 
+  if (user) await rememberCustomer(user.id, c, input.saveAddress === true)
+
   // Stock changed: refresh cached product pages.
   revalidateCatalog()
   return { ok: true, data: { orderNumber: data.order_number, token: data.public_token } }
+}
+
+/**
+ * After a signed-in order: fill an empty profile name/phone and optionally
+ * save the address. Best effort; the order is already placed.
+ */
+async function rememberCustomer(
+  userId: string,
+  c: {
+    name: string
+    phone: string
+    governorateId: number
+    cityId: number
+    address: string
+  },
+  saveAddress: boolean,
+) {
+  try {
+    const supabase = await createClient()
+    const profile = await getProfile()
+    if (profile && (!profile.fullName || !profile.phone)) {
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: profile.fullName || c.name,
+          phone: profile.phone || c.phone,
+        })
+        .eq("id", userId)
+    }
+    if (!saveAddress) return
+
+    const { data: existing } = await supabase
+      .from("addresses")
+      .select("id, governorate_id, city_id, address")
+      .eq("user_id", userId)
+    const same = existing?.some(
+      (a) =>
+        a.governorate_id === c.governorateId &&
+        a.city_id === c.cityId &&
+        a.address.trim() === c.address.trim(),
+    )
+    if (same || (existing?.length ?? 0) >= 10) return
+    await supabase.from("addresses").insert({
+      user_id: userId,
+      governorate_id: c.governorateId,
+      city_id: c.cityId,
+      address: c.address,
+      phone: c.phone,
+      is_default: !existing?.length,
+    })
+  } catch (error) {
+    console.error("rememberCustomer failed:", error)
+  }
+}
+
+export type CheckoutDefaults = {
+  signedIn: boolean
+  name: string
+  phone: string
+  addresses: {
+    id: string
+    governorateId: number
+    cityId: number | null
+    address: string
+    phone: string
+    isDefault: boolean
+  }[]
+}
+
+/** Prefill data for the checkout form (signed-in customers only). */
+export async function getCheckoutDefaults(): Promise<CheckoutDefaults> {
+  const profile = await getProfile()
+  if (!profile) return { signedIn: false, name: "", phone: "", addresses: [] }
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("addresses")
+    .select("id, governorate_id, city_id, address, phone, is_default")
+    .eq("user_id", profile.id)
+    .order("is_default", { ascending: false })
+    .order("created_at")
+  return {
+    signedIn: true,
+    name: profile.fullName,
+    phone: profile.phone,
+    addresses: (data ?? []).map((a) => ({
+      id: a.id,
+      governorateId: a.governorate_id,
+      cityId: a.city_id,
+      address: a.address,
+      phone: a.phone,
+      isDefault: a.is_default,
+    })),
+  }
 }

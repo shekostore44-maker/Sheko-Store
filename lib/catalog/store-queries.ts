@@ -64,16 +64,16 @@ export type StoreProduct = ProductCardData & {
 // -------------------------------------------------------------- helpers
 
 // Product card columns; images ordered, at most two (main + hover image).
-const CARD_COLUMNS =
+export const CARD_COLUMNS =
   "id, name, slug, price, compare_at_price, stock, product_images(url, alt, sort_order)"
 
-type CardRow = Omit<ProductCardData, "images" | "price" | "compare_at_price"> & {
+export type CardRow = Omit<ProductCardData, "images" | "price" | "compare_at_price"> & {
   price: number | string
   compare_at_price: number | string | null
   product_images: { url: string; alt: string; sort_order: number }[]
 }
 
-function toCard(row: CardRow): ProductCardData {
+export function toCard(row: CardRow): ProductCardData {
   return {
     id: row.id,
     name: row.name,
@@ -334,3 +334,43 @@ export async function searchProducts(term: string) {
       .limit(48),
   )
 }
+
+export type StoreReview = {
+  id: string
+  rating: number
+  comment: string | null
+  author_name: string | null
+  created_at: string
+}
+
+/** Approved reviews (newest first) and the overall rating of a product. */
+export const getProductReviews = cache(async (productId: string) => {
+  const empty = {
+    reviews: [] as StoreReview[],
+    average: 0,
+    count: 0,
+    /** Number of reviews with 5, 4, 3, 2 and 1 stars. */
+    distribution: [0, 0, 0, 0, 0],
+  }
+  const supabase = db()
+  if (!supabase) return empty
+  // RLS returns only approved reviews to visitors.
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, rating, comment, author_name, created_at")
+    .eq("product_id", productId)
+    .eq("is_approved", true)
+    .order("created_at", { ascending: false })
+    .limit(200)
+  if (error || !data?.length) return empty
+  const reviews = data as StoreReview[]
+  const average = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+  return {
+    reviews: reviews.slice(0, 30),
+    average: Math.round(average * 10) / 10,
+    count: reviews.length,
+    distribution: [5, 4, 3, 2, 1].map(
+      (n) => reviews.filter((r) => r.rating === n).length,
+    ),
+  }
+})

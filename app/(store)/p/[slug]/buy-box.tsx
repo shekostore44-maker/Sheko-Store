@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { WishlistButton } from "@/components/store/wishlist-button"
 import { addToCart } from "@/lib/cart/store"
 
 import type { StoreVariant } from "@/lib/catalog/store-queries"
@@ -178,6 +179,7 @@ export function BuyBox({
           <ShoppingBag className="size-5" aria-hidden />
           {available === 0 ? "غير متاح" : "أضف إلى السلة"}
         </button>
+        <WishlistButton productId={product.id} slug={product.slug} />
       </div>
     </div>
   )
