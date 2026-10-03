@@ -43,3 +43,6 @@ export const productCount = (n: number) =>
 
 export const resultCount = (n: number) =>
   countLabel(n, { one: "نتيجة واحدة", two: "نتيجتان", few: "نتائج", many: "نتيجة" })
+
+export const pieceCount = (n: number) =>
+  countLabel(n, { one: "قطعة واحدة", two: "قطعتين", few: "قطع", many: "قطعة" })

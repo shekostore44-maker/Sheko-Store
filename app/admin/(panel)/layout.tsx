@@ -4,10 +4,12 @@ import Image from "next/image"
 
 import { Toaster } from "@/components/ui/sonner"
 import { getAdmin } from "@/lib/auth/dal"
+import { createClient } from "@/lib/supabase/server"
 
 import { signOut } from "../actions"
 import { AdminNav } from "./admin-nav"
 import { MobileNav } from "./mobile-nav"
+import { NotificationBell, type AdminNotification } from "./notification-bell"
 
 export const metadata: Metadata = {
   title: { default: "لوحة التحكم", template: "%s | لوحة تحكم Sheko" },
@@ -17,6 +19,17 @@ export const metadata: Metadata = {
 export default async function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
   // Display only; every admin page and action calls requireAdmin() itself.
   const admin = await getAdmin()
+  const supabase = await createClient()
+  const [{ data: notifications }, { data: notificationSettings }] = await Promise.all([
+    supabase
+      .from("notifications")
+      .select("id, order_id, title, body, is_read, created_at")
+      .order("created_at", { ascending: false })
+      .limit(30),
+    supabase.from("settings").select("value").eq("key", "notifications").maybeSingle(),
+  ])
+  const sound =
+    (notificationSettings?.value as { sound?: boolean } | null)?.sound !== false
 
   return (
     <div className="bg-brand-ice flex min-h-screen flex-1">
@@ -48,6 +61,10 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell
+              initial={(notifications ?? []) as AdminNotification[]}
+              sound={sound}
+            />
             <span dir="ltr" className="text-muted-foreground hidden text-sm sm:inline">
               {admin?.email}
             </span>

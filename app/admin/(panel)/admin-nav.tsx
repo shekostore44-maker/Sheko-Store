@@ -19,12 +19,12 @@ const nav = [
   { label: "الإحصائيات", href: "/admin", icon: LayoutDashboard, ready: true },
   { label: "الأقسام", href: "/admin/categories", icon: LayoutGrid, ready: true },
   { label: "المنتجات", href: "/admin/products", icon: Package, ready: true },
-  { label: "الطلبات", href: "/admin/orders", icon: ShoppingCart, ready: false },
-  { label: "الشحن", href: "/admin/shipping", icon: Truck, ready: false },
+  { label: "الطلبات", href: "/admin/orders", icon: ShoppingCart, ready: true },
+  { label: "الشحن", href: "/admin/shipping", icon: Truck, ready: true },
   { label: "العملاء", href: "/admin/customers", icon: Users, ready: false },
   { label: "الكوبونات", href: "/admin/coupons", icon: Ticket, ready: false },
   { label: "البانرات", href: "/admin/banners", icon: ImageIcon, ready: false },
-  { label: "الإعدادات", href: "/admin/settings", icon: Settings, ready: false },
+  { label: "الإعدادات", href: "/admin/settings", icon: Settings, ready: true },
 ] as const
 
 export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {

@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { requireAdmin } from "@/lib/auth/dal"
 import { createClient } from "@/lib/supabase/server"
 
@@ -21,10 +23,15 @@ export default async function AdminDashboardPage() {
   ])
 
   const stats = [
-    { label: "طلبات جديدة", value: newOrders },
-    { label: "المنتجات", value: products },
-    { label: "الأقسام", value: categories },
-    { label: "محافظات ظاهرة", value: governorates, hint: `${cities} مدينة ومركز` },
+    { label: "طلبات جديدة", value: newOrders, href: "/admin/orders?status=new" },
+    { label: "المنتجات", value: products, href: "/admin/products" },
+    { label: "الأقسام", value: categories, href: "/admin/categories" },
+    {
+      label: "محافظات ظاهرة",
+      value: governorates,
+      hint: `${cities} مدينة ومركز`,
+      href: "/admin/shipping",
+    },
   ]
 
   return (
@@ -33,12 +40,17 @@ export default async function AdminDashboardPage() {
 
       <ul className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map((stat) => (
-          <li key={stat.label} className="border-border rounded-2xl border bg-white p-5">
-            <p className="text-muted-foreground text-sm">{stat.label}</p>
-            <p className="font-heading text-brand-navy mt-1 text-3xl font-bold">
-              {stat.value}
-            </p>
-            {stat.hint && <p className="text-brand-blue mt-1 text-sm">{stat.hint}</p>}
+          <li key={stat.label}>
+            <Link
+              href={stat.href}
+              className="border-border hover:border-brand-blue block h-full rounded-2xl border bg-white p-5 transition"
+            >
+              <p className="text-muted-foreground text-sm">{stat.label}</p>
+              <p className="font-heading text-brand-navy mt-1 text-3xl font-bold">
+                {stat.value}
+              </p>
+              {stat.hint && <p className="text-brand-blue mt-1 text-sm">{stat.hint}</p>}
+            </Link>
           </li>
         ))}
       </ul>

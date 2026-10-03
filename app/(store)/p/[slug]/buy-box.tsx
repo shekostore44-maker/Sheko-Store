@@ -1,10 +1,14 @@
 "use client"
 
 import { Minus, Plus, ShoppingBag } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
+
+import { addToCart } from "@/lib/cart/store"
 
 import type { StoreVariant } from "@/lib/catalog/store-queries"
-import { discountPercent, formatNumber, formatPrice } from "@/lib/format"
+import { discountPercent, formatNumber, formatPrice, pieceCount } from "@/lib/format"
 
 /** Option names and their values in display order, e.g. اللون → [كحلي، أزرق]. */
 function optionGroups(variants: StoreVariant[]) {
@@ -20,11 +24,13 @@ function optionGroups(variants: StoreVariant[]) {
 }
 
 export function BuyBox({
+  product,
   price,
   compareAtPrice,
   stock,
   variants,
 }: {
+  product: { id: string; slug: string; name: string; image: string | null }
   price: number
   compareAtPrice: number | null
   stock: number
@@ -36,6 +42,7 @@ export function BuyBox({
     () => (variants.find((v) => v.stock > 0) ?? variants[0])?.options ?? {},
   )
   const [quantity, setQuantity] = useState(1)
+  const router = useRouter()
 
   const variant = variants.find((v) =>
     Object.entries(v.options).every(([k, val]) => selected[k] === val),
@@ -52,6 +59,27 @@ export function BuyBox({
         v.stock > 0 &&
         Object.entries(selected).every(([k, val]) => k === name || v.options[k] === val),
     )
+
+  function add() {
+    if (available === 0 || (variants.length && !variant)) return
+    addToCart(
+      {
+        productId: product.id,
+        variantId: variant?.id ?? null,
+        slug: product.slug,
+        name: product.name,
+        variantName: variant?.name ?? null,
+        image: product.image,
+        price: unitPrice,
+        maxQuantity: available,
+      },
+      quantity,
+    )
+    toast.success("اتضاف للسلة", {
+      description: variant ? `${product.name} — ${variant.name}` : product.name,
+      action: { label: "عرض السلة", onClick: () => router.push("/cart") },
+    })
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -113,7 +141,7 @@ export function BuyBox({
             ? "الاختيار ده مش متاح"
             : "نفد من المخزون"
           : available <= 5
-            ? `متبقي ${available} قطع فقط`
+            ? `متبقي ${pieceCount(available)} فقط`
             : "متوفر"}
       </p>
 
@@ -141,14 +169,14 @@ export function BuyBox({
             <Minus className="size-4" />
           </button>
         </div>
-        {/* The cart is built in phase 5. */}
         <button
           type="button"
-          disabled
+          onClick={add}
+          disabled={available === 0}
           className="bg-brand-navy text-brand-ice flex h-12 flex-1 items-center justify-center gap-2 rounded-xl font-bold disabled:opacity-60"
         >
           <ShoppingBag className="size-5" aria-hidden />
-          {available === 0 ? "غير متاح" : "أضف إلى السلة (قريباً)"}
+          {available === 0 ? "غير متاح" : "أضف إلى السلة"}
         </button>
       </div>
     </div>

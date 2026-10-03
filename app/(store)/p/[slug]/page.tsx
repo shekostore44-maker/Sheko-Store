@@ -136,6 +136,12 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           </div>
 
           <BuyBox
+            product={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              image: product.images[0]?.url ?? null,
+            }}
             price={product.price}
             compareAtPrice={product.compare_at_price}
             stock={product.stock}

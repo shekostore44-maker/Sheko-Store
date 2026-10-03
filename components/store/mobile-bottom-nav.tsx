@@ -4,6 +4,8 @@ import { Home, LayoutGrid, Search, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import { CartBadge } from "./cart-count"
+
 const items = [
   { label: "الرئيسية", href: "/", icon: Home, match: (p: string) => p === "/" },
   {
@@ -46,7 +48,10 @@ export function MobileBottomNav() {
                   active ? "text-brand-blue" : "text-[#8a97b5]"
                 }`}
               >
-                <Icon className="size-5" aria-hidden />
+                <span className="relative">
+                  <Icon className="size-5" aria-hidden />
+                  {href === "/cart" && <CartBadge />}
+                </span>
                 {label}
               </Link>
             </li>

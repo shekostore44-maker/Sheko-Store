@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import type { NavCategory } from "@/lib/catalog/store-queries"
 
+import { CartCount } from "./cart-count"
 import { MobileMenu } from "./mobile-menu"
 
 export function SiteHeader({ categories }: { categories: NavCategory[] }) {
@@ -117,9 +118,7 @@ export function SiteHeader({ categories }: { categories: NavCategory[] }) {
             href="/cart"
             className="bg-brand-navy text-brand-ice flex items-center gap-2 rounded-full py-1.5 ps-1.5 pe-4 text-sm font-semibold sm:ps-2"
           >
-            <span className="bg-brand-cyan text-brand-navy grid size-6 place-items-center rounded-full text-xs font-bold">
-              0
-            </span>
+            <CartCount className="bg-brand-cyan text-brand-navy grid h-6 min-w-6 place-items-center rounded-full px-1 text-xs font-bold" />
             <ShoppingBag className="size-4 sm:hidden" aria-hidden />
             <span className="hidden sm:inline">السلة</span>
           </Link>
