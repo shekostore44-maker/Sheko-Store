@@ -52,15 +52,13 @@ export async function saveProduct(
     .eq("product_id", productId)
   if (delImagesError) return { ok: false, error: catalogDbError(delImagesError) }
   if (images.length) {
-    const { error: imagesError } = await supabase
-      .from("product_images")
-      .insert(
-        images.map((image, index) => ({
-          ...image,
-          product_id: productId,
-          sort_order: index,
-        })),
-      )
+    const { error: imagesError } = await supabase.from("product_images").insert(
+      images.map((image, index) => ({
+        ...image,
+        product_id: productId,
+        sort_order: index,
+      })),
+    )
     if (imagesError) return { ok: false, error: catalogDbError(imagesError) }
   }
 

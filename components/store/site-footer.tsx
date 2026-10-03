@@ -1,36 +1,10 @@
+import { Banknote, MessageCircle, Truck } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-const columns = [
-  {
-    title: "تسوّق",
-    links: [
-      { label: "الساعات", href: "/c/watches" },
-      { label: "الأزياء", href: "/c/fashion" },
-      { label: "الأحذية", href: "/c/shoes" },
-      { label: "الشنط", href: "/c/bags" },
-    ],
-  },
-  {
-    title: "المساعدة",
-    links: [
-      { label: "تتبع الطلب", href: "/track" },
-      { label: "الأسئلة الشائعة", href: "/faq" },
-      { label: "سياسة الشحن", href: "/policies/shipping" },
-      { label: "سياسة الاسترجاع", href: "/policies/returns" },
-    ],
-  },
-  {
-    title: "Sheko",
-    links: [
-      { label: "من نحن", href: "/about" },
-      { label: "تواصل معنا", href: "/contact" },
-      { label: "سياسة الخصوصية", href: "/policies/privacy" },
-    ],
-  },
-]
+import type { NavCategory } from "@/lib/catalog/store-queries"
 
-export function SiteFooter() {
+export function SiteFooter({ categories }: { categories: NavCategory[] }) {
   return (
     <footer className="bg-brand-navy mt-auto pb-24 text-[#b9c6e4] lg:pb-0">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
@@ -43,23 +17,63 @@ export function SiteFooter() {
             ساعات وأزياء وإكسسوارات مختارة بعناية. شحن لكل المحافظات والدفع عند الاستلام.
           </p>
         </div>
-        {columns.map((column) => (
-          <nav key={column.title} aria-label={column.title}>
-            <h2 className="text-brand-ice mb-4 text-lg font-bold">{column.title}</h2>
+
+        {categories.length > 0 && (
+          <nav aria-label="الأقسام">
+            <h2 className="text-brand-ice mb-4 text-lg font-bold">الأقسام</h2>
             <ul className="space-y-2.5">
-              {column.links.map((link) => (
-                <li key={link.href}>
+              {categories.slice(0, 6).map((category) => (
+                <li key={category.id}>
                   <Link
-                    href={link.href}
+                    href={`/c/${category.slug}`}
                     className="hover:text-brand-cyan transition-colors"
                   >
-                    {link.label}
+                    {category.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </nav>
-        ))}
+        )}
+
+        <nav aria-label="تسوّق">
+          <h2 className="text-brand-ice mb-4 text-lg font-bold">تسوّق</h2>
+          <ul className="space-y-2.5">
+            <li>
+              <Link href="/#new" className="hover:text-brand-cyan transition-colors">
+                وصل حديثاً
+              </Link>
+            </li>
+            <li>
+              <Link href="/#offers" className="hover:text-brand-cyan transition-colors">
+                العروض
+              </Link>
+            </li>
+            <li>
+              <Link href="/search" className="hover:text-brand-cyan transition-colors">
+                البحث
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        <div>
+          <h2 className="text-brand-ice mb-4 text-lg font-bold">طلبك معانا</h2>
+          <ul className="space-y-3">
+            <li className="flex items-center gap-2">
+              <Truck className="text-brand-cyan size-4 shrink-0" aria-hidden /> شحن لكل
+              المحافظات
+            </li>
+            <li className="flex items-center gap-2">
+              <Banknote className="text-brand-cyan size-4 shrink-0" aria-hidden /> الدفع
+              عند الاستلام
+            </li>
+            <li className="flex items-center gap-2">
+              <MessageCircle className="text-brand-cyan size-4 shrink-0" aria-hidden />{" "}
+              تأكيد الطلب عبر واتساب
+            </li>
+          </ul>
+        </div>
       </div>
       <div className="border-t border-white/10 px-4 py-5 text-center text-sm">
         © {new Date().getFullYear()} Sheko. جميع الحقوق محفوظة.

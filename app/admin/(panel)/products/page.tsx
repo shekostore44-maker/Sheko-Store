@@ -6,6 +6,7 @@ import Link from "next/link"
 import { NativeSelect } from "@/components/admin/field"
 import { requireAdmin } from "@/lib/auth/dal"
 import { getCategoryOptions } from "@/lib/catalog/admin-queries"
+import { formatNumber } from "@/lib/format"
 import { createClient } from "@/lib/supabase/server"
 
 import { ProductRowActions } from "./product-row-actions"
@@ -33,7 +34,7 @@ type Row = {
   product_images: { url: string }[]
 }
 
-const money = (n: number) => new Intl.NumberFormat("ar-EG").format(n)
+const money = formatNumber
 
 export default async function ProductsPage(props: PageProps<"/admin/products">) {
   await requireAdmin()

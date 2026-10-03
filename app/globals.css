@@ -144,3 +144,35 @@
     @apply font-heading;
   }
 }
+
+/* Product descriptions (sanitized HTML from the admin editor). */
+@layer components {
+  .prose-sheko {
+    @apply leading-loose;
+  }
+  .prose-sheko > * + * {
+    @apply mt-4;
+  }
+  .prose-sheko h2 {
+    @apply text-brand-navy font-heading text-xl font-bold;
+  }
+  .prose-sheko h3 {
+    @apply text-brand-navy font-heading text-lg font-bold;
+  }
+  .prose-sheko ul {
+    @apply list-disc ps-6;
+  }
+  .prose-sheko ol {
+    @apply list-decimal ps-6;
+  }
+  .prose-sheko li + li {
+    @apply mt-1;
+  }
+  .prose-sheko strong,
+  .prose-sheko b {
+    @apply text-brand-navy font-bold;
+  }
+  .prose-sheko a {
+    @apply text-brand-blue underline;
+  }
+}

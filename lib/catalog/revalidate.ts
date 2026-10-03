@@ -1,9 +1,15 @@
 import "server-only"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, updateTag } from "next/cache"
 
-/** Refresh every store page after the catalog changes. */
+import { CATALOG_TAG } from "@/lib/supabase/public"
+
+/**
+ * Call from admin Server Actions after the catalog changes: expires the cached
+ * catalog data immediately and re-renders every store page.
+ */
 export function revalidateCatalog() {
+  updateTag(CATALOG_TAG)
   revalidatePath("/", "layout")
 }
 
