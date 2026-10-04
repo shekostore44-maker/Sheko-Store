@@ -378,6 +378,52 @@ export function createWatchScene(
     window.addEventListener("pointermove", onPointerMove, { passive: true })
   }
 
+  // Touch: a horizontal swipe on the watch turns it; vertical swipes still
+  // scroll the page (touch-action: pan-y), and the browser cancels the
+  // pointer as soon as a scroll starts. Released, it eases back.
+  const drag = {
+    active: false,
+    id: -1,
+    startX: 0,
+    startY: 0,
+    from: 0,
+    from2: 0,
+    x: 0,
+    y: 0,
+  }
+  const onTouchDown = (event: PointerEvent) => {
+    if (event.pointerType === "mouse") return
+    const { width, height } = container.getBoundingClientRect()
+    if (!width || !height) return
+    Object.assign(drag, {
+      active: true,
+      id: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      from: drag.x,
+      from2: drag.y,
+    })
+    hoverTarget = 1
+  }
+  const onTouchMove = (event: PointerEvent) => {
+    if (!drag.active || event.pointerId !== drag.id) return
+    const { width, height } = container.getBoundingClientRect()
+    const clamp = (v: number, max: number) => Math.max(-max, Math.min(max, v))
+    drag.x = clamp(drag.from + ((event.clientX - drag.startX) / width) * 2.4, 1.3)
+    drag.y = clamp(drag.from2 + ((event.clientY - drag.startY) / height) * 0.8, 0.4)
+  }
+  const onTouchEnd = (event: PointerEvent) => {
+    if (event.pointerId !== drag.id) return
+    drag.active = false
+    hoverTarget = 0
+  }
+  if (!options.reducedMotion) {
+    container.addEventListener("pointerdown", onTouchDown, { passive: true })
+    container.addEventListener("pointermove", onTouchMove, { passive: true })
+    container.addEventListener("pointerup", onTouchEnd, { passive: true })
+    container.addEventListener("pointercancel", onTouchEnd, { passive: true })
+  }
+
   const tick = (now: number) => {
     const dt = Math.min((now - last) / 1000, 0.05)
     last = now
@@ -385,12 +431,21 @@ export function createWatchScene(
     const ease = 1 - Math.exp(-dt * 2.6)
 
     hover += (hoverTarget - hover) * (1 - Math.exp(-dt * 4))
+    if (!drag.active) {
+      // Released: drift back to the automatic motion.
+      const back = Math.exp(-dt * 1.6)
+      drag.x *= back
+      drag.y *= back
+    }
     const amplitude = 1 + hover * 0.45
     const autoSpin = Math.sin(elapsed * 0.32) * (options.coarsePointer ? 0.3 : 0.36)
-    const targetY = -0.2 + autoSpin + pointer.x * 0.32 * amplitude
-    const targetX = -0.08 + pointer.y * 0.16 * amplitude + Math.sin(elapsed * 0.5) * 0.03
-    watch.rotation.y += (targetY - watch.rotation.y) * ease
-    watch.rotation.x += (targetX - watch.rotation.x) * ease
+    const targetY = -0.2 + autoSpin + pointer.x * 0.32 * amplitude + drag.x
+    const targetX =
+      -0.08 + pointer.y * 0.16 * amplitude + drag.y + Math.sin(elapsed * 0.5) * 0.03
+    // Follow the finger more tightly than the mouse.
+    const follow = drag.active ? 1 - Math.exp(-dt * 9) : ease
+    watch.rotation.y += (targetY - watch.rotation.y) * follow
+    watch.rotation.x += (targetX - watch.rotation.x) * follow
     watch.position.y = Math.sin(elapsed * 0.8) * 0.05
 
     highlight.intensity = hover * 1.6
@@ -441,6 +496,10 @@ export function createWatchScene(
       resizeObserver.disconnect()
       document.removeEventListener("visibilitychange", update)
       window.removeEventListener("pointermove", onPointerMove)
+      container.removeEventListener("pointerdown", onTouchDown)
+      container.removeEventListener("pointermove", onTouchMove)
+      container.removeEventListener("pointerup", onTouchEnd)
+      container.removeEventListener("pointercancel", onTouchEnd)
       for (const g of geometries) g.dispose()
       for (const m of [metal, glass, display, sheen, strapMaterial, holeMaterial])
         m.dispose()
